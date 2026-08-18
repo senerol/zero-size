@@ -190,7 +190,12 @@ body {
     overflow: auto;
     display: flex;
     align-items: flex-start;
-    justify-content: center;
+    /* Plain "center" clips the start edge when content overflows, because the
+       centering offset goes negative and isn't reachable by scrolling.
+       "safe center" (with a flex-start fallback for older browsers) centers
+       small trees but falls back to left-aligned + scrollable for big ones. */
+    justify-content: flex-start;
+    justify-content: safe center;
     min-height: 320px;
 }
 

@@ -111,7 +111,10 @@ class HuffmanCoder {
         const padding = (8 - bits.length % 8) % 8;
         bits += '0'.repeat(padding);
 
-        const payload = this.serializeTree(tree) + '\n' + padding + '\n' + this.bitsToBytes(bits);
+        // Length-prefixed so a tree containing '\n' (or any other character)
+        // as a leaf can't be mistaken for the header/body delimiter.
+        const treeStr = this.serializeTree(tree);
+        const payload = treeStr.length + '\n' + treeStr + padding + this.bitsToBytes(bits);
 
         const stats = {
             originalSize: text.length,
@@ -124,11 +127,12 @@ class HuffmanCoder {
     }
 
     decode(payload) {
-        const firstBreak = payload.indexOf('\n');
-        const secondBreak = payload.indexOf('\n', firstBreak + 1);
-        const treeData = payload.substring(0, firstBreak);
-        const padding = parseInt(payload.substring(firstBreak + 1, secondBreak), 10);
-        const bytes = payload.substring(secondBreak + 1);
+        const headerBreak = payload.indexOf('\n');
+        const treeLen = parseInt(payload.substring(0, headerBreak), 10);
+        const treeStart = headerBreak + 1;
+        const treeData = payload.substring(treeStart, treeStart + treeLen);
+        const padding = payload.charCodeAt(treeStart + treeLen) - '0'.charCodeAt(0);
+        const bytes = payload.substring(treeStart + treeLen + 1);
 
         this.ind = 0;
         const tree = this.deserializeTree(treeData);
