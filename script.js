@@ -50,13 +50,16 @@ window.addEventListener('DOMContentLoaded', () => {
             }
 
             try {
+                const start = performance.now();
                 const result = mode === 'encode' ? coder.encode(text) : coder.decode(text);
+                const durationMs = performance.now() - start;
+
                 const output = mode === 'encode' ? result.payload : result.text;
                 const suffix = mode === 'encode' ? '_encoded.txt' : '_decoded.txt';
 
                 downloadFile(file.name.split('.')[0] + suffix, output);
                 renderTree(treeArea, result.tree);
-                renderStats(result.stats, mode);
+                renderStats(result.stats, mode, durationMs);
             } catch (err) {
                 alert('Could not ' + mode + ' this file: ' + err.message);
             }
@@ -64,7 +67,9 @@ window.addEventListener('DOMContentLoaded', () => {
         reader.readAsText(file, 'UTF-8');
     }
 
-    function renderStats(stats, mode) {
+    function renderStats(stats, mode, durationMs) {
+        const timeRow = `<dt>${mode === 'encode' ? 'Encoding' : 'Decoding'} time</dt><dd>${formatDuration(durationMs)}</dd>`;
+
         if (mode === 'encode') {
             statsEl.innerHTML = `
                 <dl>
@@ -72,13 +77,19 @@ window.addEventListener('DOMContentLoaded', () => {
                     <dt>Compressed size</dt><dd>${stats.compressedSize} bytes</dd>
                     <dt>Compression ratio</dt><dd>${stats.ratio}x</dd>
                     <dt>Unique characters</dt><dd>${stats.uniqueChars}</dd>
+                    ${timeRow}
                 </dl>`;
         } else {
             statsEl.innerHTML = `
                 <dl>
                     <dt>Decoded size</dt><dd>${stats.decodedSize} chars</dd>
+                    ${timeRow}
                 </dl>`;
         }
+    }
+
+    function formatDuration(ms) {
+        return ms < 1 ? '<1 ms' : Math.round(ms) + ' ms';
     }
 
     function downloadFile(fileName, data) {
